@@ -16,135 +16,136 @@ import java.util.*;
 
 public class DoorModule {
 
-    static boolean hasChanged;
+    static boolean accHasChanged;
+	static boolean Door1HasChanged;
+	static boolean Motion1HasChanged;
 
+	static MMSS_ServerCommander sc;
 
     public static void main(String args[]) throws InterruptedException {
 	
 
-	hasChanged = false;        
+	accHasChanged = false;
+	Door1HasChanged = false;
+	Motion1HasChanged = false;        
 	System.out.println("DoorModule service started.");
-
-        GpioController gpio = GpioFactory.getInstance();
-
-        GpioPinDigitalInput doorSwitch = gpio.provisionDigitalInputPin(RaspiPin.GPIO_02, PinPullResistance.PULL_UP);
-
-	GpioPinDigitalInput motionSensor = gpio.provisionDigitalInputPin(RaspiPin.GPIO_01);//, PinPullResistance.PULL_UP);
-
-	//foo();
 	
-        doorSwitch.setShutdownOptions(true);
-
-        doorSwitch.addListener(new GpioPinListenerDigital() {
-            @Override
-            public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
-                
-	//	ledpin.toggle();
-		hasChanged = true;
-            }
-
-        });
-
-        motionSensor.addListener(new GpioPinListenerDigital() {
-            @Override
-            public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
-                
-	//	ledpin.toggle();
-		System.out.println("Motion sensor has changed");
-		hasChanged = true;
-            }
-});
-
-		PassableModule myModule = new PassableModule();
-
-
-
-	
-		myModule.name = "Front Door Sensor";
-		myModule.type = "SensorModule";
-		myModule.id = "1";
-		myModule.mainServerID = "127.0.0.1:9999";
-		
-		myModule.parameterData.add("DoorClosed");
-		myModule.parameterData.add(doorSwitch.isLow());
-		myModule.parameterData.add("MotionDetected");
-		myModule.parameterData.add(motionSensor.isLow());
-		myModule.isBeingListened = true;
-try{
-		System.out.println(myModule.toJSON());
-		ConnectionExample.send("HTTP://localhost:9999/module/add", myModule.toJSON());
-} catch ( Exception e) { 	System.out.println( e);}
-
-	
-
-        // keep program running until user aborts (CTRL-C)
-        while(true) {
-
-            Thread.sleep(500);
-
-	    if ( hasChanged ) {
-
-		//System.out.println("Motion sensor has changed");
-		PassableLog logEntry = new PassableLog();
-		//logEntry.author = new PassableShortInfo("Module1","FrontDoor");
-		logEntry.subjectType = "Door Switch";
-		logEntry.data.add("Front Door");  
-		logEntry.time = new ServerDate();
-		//logEntry.data.add(motionSensor.isLow());              
-		if ( doorSwitch.isLow() ) 
-		{
-			logEntry.message = "The door has closed.";
-			logEntry.data.add("Closed");
-		} else 
-		{
-			logEntry.message = "The door has opened.";
-			logEntry.data.add("Open");
-		}
-		if ( motionSensor.isHigh() ) 
-		{
-			System.out.println("Motion sensor is high");
-		
-		} else 
-		{
-			System.out.println("Motion sensor is low");
-		}
-		
-		
-
-		try{
-
-			System.out.println(logEntry.toJSON());
-			ConnectionExample.send("HTTP://localhost:9999/module/log", logEntry.toJSON());
-		}catch(Exception e){
-			System.out.println("Problem with log entry.");
-		}
-
-
-
-
-		hasChanged = false;
-	    }
-	} 
-		
-
-    }
-/* 
-public static void foo()
-{
-        GpioController gpio = GpioFactory.getInstance();
-	GpioPinDigitalInput motionSensor = gpio.provisionDigitalInputPin(RaspiPin.GPIO_03, PinPullResistance.PULL_UP);
-		motionSensor.setShutdownOptions(true);
-
-        motionSensor.addListener(new GpioPinListenerDigital() {
-            @Override
-            public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
-                
-	//	ledpin.toggle();
-		hasChanged = true;
-            }
-
-        });
-
+    GpioController gpio = GpioFactory.getInstance();
+	try{
+	sc = new MMSS_ServerCommander("http://127.0.0.1:9999");
 }
-*/
+catch(Exception e)
+{
+System.out.println(e);
+}
+
+
+    GpioPinDigitalInput doorSwitch = gpio.provisionDigitalInputPin(RaspiPin.GPIO_02, PinPullResistance.PULL_UP);
+
+	GpioPinDigitalInput motionSensor = gpio.provisionDigitalInputPin(RaspiPin.GPIO_01);
+
+	doorSwitch.setShutdownOptions(true);
+
+    doorSwitch.addListener(new GpioPinListenerDigital() {
+        @Override
+        public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
+				System.out.println("Door has changed");
+				accHasChanged = true;
+				Door1HasChanged = true;
+				
+            }
+    });
+
+    motionSensor.addListener(new GpioPinListenerDigital() {
+        @Override
+        public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
+			System.out.println("Motion sensor has changed");
+			accHasChanged = true;
+			Motion1HasChanged = true;
+        }
+	});
+
+	PassableModule myModule = new PassableModule();
+
+
+
+	
+	myModule.name = "Front Door Sensor";
+	myModule.type = "SensorModule";
+	myModule.id = "1";
+	myModule.mainServerID = "127.0.0.1:9999";
+		
+	myModule.parameterData.add("FrontDoorClosed");
+	myModule.parameterData.add(doorSwitch.isLow());
+	myModule.parameterData.add("MainMotionDetected");
+	myModule.parameterData.add(motionSensor.isHigh());
+	myModule.isBeingListened = true;
+	try
+	{
+		System.out.println(myModule.toJSON());
+		sc.addModule(myModule);
+	} 
+	catch ( Exception e) 
+	{ 	
+		System.out.println( e);
+	}
+
+	
+	while(true) {
+
+        Thread.sleep(500);
+
+		if ( accHasChanged ) {
+			PassableLog logEntry = new PassableLog();
+
+			logEntry.time = new ServerDate();
+			
+		if( Door1HasChanged )
+{
+			logEntry.subjectType = "Door Switch";
+			logEntry.data.add("Front Door");  
+			if ( doorSwitch.isLow() ) 
+			{
+				logEntry.message = "The door has closed.";
+				logEntry.data.add("Closed");
+			} else 
+			{
+				logEntry.message = "The door has opened.";
+				logEntry.data.add("Open");
+			}
+			Door1HasChanged = false;
+}
+
+			logEntry.data.add("Motion Sensor");
+
+	
+	
+		if( Motion1HasChanged)
+{
+			logEntry.subjectType = "Motion Sensor";
+			logEntry.data.add("Motion Sensor");  
+			if ( motionSensor.isHigh() ) 
+			{
+				logEntry.message = "Movement Detected";
+				logEntry.data.add("Movement Detected");
+			} else 
+			{
+				logEntry.message = "No Movement Detected";
+				logEntry.data.add("No Movement Detected");
+			}
+Motion1HasChanged = false;
+}	
+			try
+			{
+				System.out.println(logEntry.toJSON());
+				sc.addModuleLog(logEntry);
+			}
+			catch(Exception e)
+			{
+				System.out.println(e);
+			}
+			accHasChanged = false;
+			}
+		} 
+	}
 }
