@@ -21,9 +21,18 @@ public class DoorModule {
 	static boolean Motion1HasChanged;
 
 	static MMSS_ServerCommander sc;
-
+static String server;
     public static void main(String args[]) throws InterruptedException {
-	
+for(int i =0; i<args.length; ++i)
+{
+	if ( args[i].equals("-d"))
+{
+server = args[i+1];	
+}
+
+
+
+}	
 
 	accHasChanged = false;
 	Door1HasChanged = false;
@@ -32,7 +41,7 @@ public class DoorModule {
 	
     GpioController gpio = GpioFactory.getInstance();
 	try{
-	sc = new MMSS_ServerCommander("http://127.0.0.1:9999");
+	sc = new MMSS_ServerCommander("http://" + server );  //"http://192.168.43.53:8081");
 }
 catch(Exception e)
 {
@@ -70,15 +79,13 @@ System.out.println(e);
 
 
 	
-	myModule.name = "Front Door Sensor";
+	myModule.name = "FrontDoorandMotion";
 	myModule.type = "SensorModule";
-	myModule.id = "1";
-	myModule.mainServerID = "127.0.0.1:9999";
+	myModule.id = "1599";
+	myModule.mainServerID = server; // "192.168.43.53:8081";
 		
-	myModule.parameterData.add("FrontDoorClosed");
-	myModule.parameterData.add(doorSwitch.isLow());
-	myModule.parameterData.add("MainMotionDetected");
-	myModule.parameterData.add(motionSensor.isHigh());
+	myModule.parameterData.add("FrontDoor");
+	myModule.parameterData.add("FamilyRoomMotion");
 	myModule.isBeingListened = true;
 	try
 	{
@@ -97,26 +104,28 @@ System.out.println(e);
 
 		if ( accHasChanged ) {
 			PassableLog logEntry = new PassableLog();
-
+						
 			logEntry.time = new ServerDate();
+
+			logEntry.authorInfo = new PassableShortInfo("1599","module");
 			
 		if( Door1HasChanged )
 {
+
 			logEntry.subjectType = "Door Switch";
 			logEntry.data.add("Front Door");  
 			if ( doorSwitch.isLow() ) 
 			{
-				logEntry.message = "The door has closed.";
+				logEntry.message = "Front door closed";
 				logEntry.data.add("Closed");
 			} else 
 			{
-				logEntry.message = "The door has opened.";
+				logEntry.message = "Front door opened";
 				logEntry.data.add("Open");
 			}
 			Door1HasChanged = false;
 }
 
-			logEntry.data.add("Motion Sensor");
 
 	
 	
@@ -126,12 +135,12 @@ System.out.println(e);
 			logEntry.data.add("Motion Sensor");  
 			if ( motionSensor.isHigh() ) 
 			{
-				logEntry.message = "Movement Detected";
-				logEntry.data.add("Movement Detected");
+				logEntry.message = "Movement detected";
+				logEntry.data.add("Movement detected");
 			} else 
 			{
-				logEntry.message = "No Movement Detected";
-				logEntry.data.add("No Movement Detected");
+				logEntry.message = "Movement ceased";
+				logEntry.data.add("Movement ceased");
 			}
 Motion1HasChanged = false;
 }	
